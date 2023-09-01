@@ -1,0 +1,13 @@
+bot:
+  name: ChemistALT_bot
+  token: 6214620768:AAGHNTVP8HNa1nvoqtjvyZh-OJdxoHOiT8w
+
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  datasource:
+    url: jdbc:postgresql://localhost:5432/chemical-bot
+    username: postgres
+    password: postgres
