@@ -1,6 +1,8 @@
 bot:
   name: ChemistALT_bot
   token: 6214620768:AAGHNTVP8HNa1nvoqtjvyZh-OJdxoHOiT8w
+crone:
+  scheduler: 0 * * * * *
 
 spring:
   jpa:
