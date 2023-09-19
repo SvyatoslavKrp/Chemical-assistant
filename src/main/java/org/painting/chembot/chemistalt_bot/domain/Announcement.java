@@ -7,7 +7,9 @@ import lombok.Setter;
 
 import javax.persistence.*;
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Date;
 
 @Getter
 @Setter
@@ -18,7 +20,7 @@ import java.time.LocalDateTime;
 @Table(name = "announcements")
 public class Announcement {
 
-    public Announcement(String announcement, User user, Timestamp date) {
+    public Announcement(String announcement, User user, LocalDate date) {
         this.announcement = announcement;
         this.user = user;
         this.date = date;
@@ -33,7 +35,7 @@ public class Announcement {
     private String announcement;
 
     @Column(name = "date")
-    private Timestamp date;
+    private LocalDate date;
 
     @ManyToOne
     private User user;
