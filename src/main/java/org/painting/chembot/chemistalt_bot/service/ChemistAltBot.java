@@ -24,10 +24,7 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -53,7 +50,6 @@ public class ChemistAltBot extends TelegramLongPollingBot {
         listOfCommands.add(new BotCommand("/information", "Информация об участках"));
         listOfCommands.add(new BotCommand("/create_announcement", "Создать объявление"));
         listOfCommands.add(new BotCommand("/get_all_announcements", "Мои объявления"));
-        listOfCommands.add(new BotCommand("/delete_my_announcement", "Удалить мои объявления"));
         listOfCommands.add(new BotCommand("/instructions", "Рабочие инструкции"));
         listOfCommands.add(new BotCommand("/set_reminder", "Установить напоминание"));
 
@@ -103,7 +99,10 @@ public class ChemistAltBot extends TelegramLongPollingBot {
 
 
                 case "/instructions" -> showAllInstructions(chatId);
-                case "/set_reminder" -> setReminder(chatId);
+                case "/set_reminder" -> {
+
+
+                }
 
                 default -> {
 
@@ -133,14 +132,7 @@ public class ChemistAltBot extends TelegramLongPollingBot {
 
                 default -> {
 
-                    if (data.startsWith("Announcement_to_delete")) {
-
-                        String userName = update.getCallbackQuery().getMessage().getChat().getUserName();
-
-                        deleteAnnouncement(data, userName);
-                        messageToSend.setText("Ваше объявление удалено");
-
-                    } else if (data.startsWith("announcement ")) {
+                     if (data.startsWith("announcement ")) {
 
                         String announcementToRepeat = data.replace("announcement ", "");
                         sendAnnouncementToEveryone(chatId, announcementToRepeat);
@@ -233,7 +225,7 @@ public class ChemistAltBot extends TelegramLongPollingBot {
         if (optionalUser.isPresent()) {
 
             User user = optionalUser.get();
-            Timestamp date = new Timestamp(System.currentTimeMillis());
+            LocalDate date = LocalDate.now();
 
             Announcement announcement = new Announcement(messageText, user, date);
             announcementRepository.save(announcement);
@@ -306,53 +298,22 @@ public class ChemistAltBot extends TelegramLongPollingBot {
     }
 
     @Scheduled(cron = "${crone.scheduler}")
-    private void clearAnnouncements() {
+    private void clearAnnouncement() {
 
         List<Announcement> allAnnouncements = announcementRepository.findAll();
         for (Announcement announcement : allAnnouncements) {
 
-            LocalDateTime now = LocalDateTime.now();
-            LocalDateTime oneMonth = now.plusMonths(1);
+            LocalDate now = LocalDate.now();
+            LocalDate oneMonth = now.plusDays(1);
 
-            Timestamp date = announcement.getDate();
-            //реализую удаление даты старше месяца
+            LocalDate announcementDate = announcement.getDate();
+
+            if (announcementDate.isBefore(oneMonth)) {
+
+                announcementRepository.delete(announcement);
+                log.info("The announcement " + announcement.getAnnouncement() + " has been deleted. User: " + announcement.getUser().getUsername());
+            }
         }
-
-    }
-
-
-    private void setReminder(Long chatId) {
-        //String textToSend = "Пользователь @" + optionalUser.get().getUsername() + " отправил сообщение:\n" + announcementText;
-        //            sendMessage(chatId, textToSend);
-//        SendMessage messageToSend = new SendMessage();
-//        messageToSend.setChatId(String.valueOf(chatId));
-//        messageToSend.setText("Выберетие интервал");
-//
-//        InlineKeyboardMarkup markupLine = new InlineKeyboardMarkup();
-//        List<InlineKeyboardButton> inlineRow = new ArrayList<>();
-//        List<List<InlineKeyboardButton>> inlineRows = new ArrayList<>();
-//
-//        InlineKeyboardButton hour = new InlineKeyboardButton();
-//        hour.setText("1 час");
-//        hour.setCallbackData("one_hour");
-//
-//        InlineKeyboardButton twoHours = new InlineKeyboardButton();
-//        twoHours.setText("2 часа");
-//        twoHours.setCallbackData("two_hours");
-//
-//        InlineKeyboardButton threeHours = new InlineKeyboardButton();
-//        threeHours.setText("3 часа");
-//        threeHours.setCallbackData("three_hours");
-//
-//        inlineRow.add(hour);
-//        inlineRow.add(twoHours);
-//        inlineRow.add(threeHours);
-//        inlineRows.add(inlineRow);
-//
-//        markupLine.setKeyboard(inlineRows);
-//        messageToSend.setReplyMarkup(markupLine);
-//
-//        executeSending(messageToSend);
 
     }
 
@@ -365,13 +326,14 @@ public class ChemistAltBot extends TelegramLongPollingBot {
 
     }
 
-    private void deleteAnnouncement(String announcementId, String userName) {
+    private void setReminder(Long chatId) {
 
-        String id = announcementId.replace("Announcement_to_delete ", "");
-        announcementRepository.deleteById(Long.valueOf(id));
 
-        log.info("The user " + userName + " has removed his announcement");
+
     }
+
+
+
 
 //    private void getAnnouncementsWithKeyboard(Long chatId, AnnouncementPurpose purpose) {
 //
