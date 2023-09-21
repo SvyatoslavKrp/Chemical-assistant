@@ -3,14 +3,10 @@ package org.painting.chembot.chemistalt_bot.domain;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import javax.persistence.*;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -33,6 +29,5 @@ public class User {
     private Timestamp registeredAt;
     @OneToMany(mappedBy = "user")
     private List<Announcement> userAnnouncements;
-    @OneToMany(mappedBy = "user")
-    private List<Reminder> userReminders;
+
 }
