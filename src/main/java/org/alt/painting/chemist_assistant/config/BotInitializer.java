@@ -1,8 +1,8 @@
-package org.painting.chembot.chemistalt_bot.config;
+package org.alt.painting.chemist_assistant.config;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.painting.chembot.chemistalt_bot.service.ChemistAltBot;
+import org.alt.painting.chemist_assistant.service.ChemistAltBot;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;

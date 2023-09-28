@@ -9,7 +9,7 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>org.painting.chem-bot</groupId>
-	<artifactId>ChemistALT_bot</artifactId>
+	<artifactId>ChemistAssistant</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>ChemistALT_bot</name>
 	<description>ChemistALT_bot</description>
