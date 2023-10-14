@@ -1,16 +1,11 @@
-package org.painting.chembot.chemistalt_bot.service;
+package org.alt.painting.chemist_assistant.service;
 
 import com.vdurmont.emoji.EmojiParser;
 import lombok.extern.slf4j.Slf4j;
-import org.painting.chembot.chemistalt_bot.config.BotConfig;
-import org.painting.chembot.chemistalt_bot.domain.Announcement;
-import org.painting.chembot.chemistalt_bot.domain.Instruction;
-import org.painting.chembot.chemistalt_bot.domain.Malfunction;
-import org.painting.chembot.chemistalt_bot.domain.User;
-import org.painting.chembot.chemistalt_bot.repository.AnnouncementRepository;
-import org.painting.chembot.chemistalt_bot.repository.InstructionRepository;
-import org.painting.chembot.chemistalt_bot.repository.MalfunctionRepository;
-import org.painting.chembot.chemistalt_bot.repository.UserRepository;
+import org.alt.painting.chemist_assistant.domain.*;
+import org.alt.painting.chemist_assistant.domain.User;
+import org.alt.painting.chemist_assistant.repository.*;
+import org.alt.painting.chemist_assistant.config.BotConfig;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
@@ -28,6 +23,7 @@ import java.io.File;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.function.Consumer;
 
 @Service
 @Slf4j
@@ -38,23 +34,25 @@ public class ChemistAltBot extends TelegramLongPollingBot {
     private final AnnouncementRepository announcementRepository;
     private final InstructionRepository instructionRepository;
     private final MalfunctionRepository malfunctionRepository;
+    private final WorkshopRepository workshopRepository;
+
+    private final Map<String, Consumer<Message>> commands = new HashMap<>();
     private boolean isCreatingAd = false;
     private boolean isCreatingMalfunction = false;
-    private static final String AREA1 = "AREA1";
-    private static final String AREA2 = "AREA2";
-    private static final String AREA3 = "AREA3";
 
     public ChemistAltBot(BotConfig botConfig,
                          UserRepository userRepository,
                          AnnouncementRepository announcementRepository,
                          InstructionRepository instructionRepository,
-                         MalfunctionRepository malfunctionRepository) {
+                         MalfunctionRepository malfunctionRepository,
+                         WorkshopRepository workshopRepository) {
 
         this.botConfig = botConfig;
         this.userRepository = userRepository;
         this.announcementRepository = announcementRepository;
         this.instructionRepository = instructionRepository;
         this.malfunctionRepository = malfunctionRepository;
+        this.workshopRepository = workshopRepository;
 
         List<BotCommand> listOfCommands = new ArrayList<>();
         listOfCommands.add(new BotCommand("/start", "Запустить бот"));
@@ -63,11 +61,18 @@ public class ChemistAltBot extends TelegramLongPollingBot {
         listOfCommands.add(new BotCommand("/instructions", "Рабочие инструкции"));
         listOfCommands.add(new BotCommand("/malfunctions", "Неисправности"));
 
+        commands.put("/start", this::startCommandReceived);
+        commands.put("/information", this::getInfoOptions);
+        commands.put("/announcements", this::showAnnouncementOptions);
+        commands.put("/instructions", this::showAllInstructions);
+        commands.put("/malfunctions", this::showMalfunctionsOptions);
+
         try {
             execute(new SetMyCommands(listOfCommands, new BotCommandScopeDefault(), null));
         } catch (TelegramApiException e) {
             log.error("Error settings bot's command list: " + e.getMessage());
         }
+
 
     }
 
@@ -87,32 +92,42 @@ public class ChemistAltBot extends TelegramLongPollingBot {
         if (update.hasMessage() && update.getMessage().hasText()) {
 
             Message message = update.getMessage();
-            Long chatId = message.getChatId();
+            String messageText = message.getText();
 
-            switch (message.getText()) {
+            Consumer<Message> handler = commands.get(messageText);
 
-                case "/start" -> startCommandReceived(message);
-                case "/information" -> giveUserInformation(message);
-                case "/announcements" -> showAnnouncementOptions(chatId);
-                case "/instructions" -> showAllInstructions(chatId);
-                case "/malfunctions" -> showMalfunctionsOptions(chatId);
-
-                default -> {
-                    //синхронизировать?
-                    if (isCreatingAd) {
-                        saveAnnouncement(chatId, message.getText());
-                        sendAnnouncementToEveryone(chatId, message.getText());
-                    }
-                    if (isCreatingMalfunction) {
-
-                        saveMalfunction(message.getText());
-
-                    } else {
-                        sendMessage(chatId, "Извините, но я не узнаю команду");
-                    }
-
-                }
+            if (handler != null) {
+                handler.accept(message);
+            } else {
+                sendMessage(message.getChatId(), "Извините, но я не узнаю команду");
             }
+
+//            switch (message.getText()) {
+//
+//                case "/start" -> startCommandReceived(message);
+//                case "/information" -> getInfoOptions(message);
+//                case "/announcements" -> showAnnouncementOptions(message);
+//                case "/instructions" -> showAllInstructions(message);
+//                case "/malfunctions" -> showMalfunctionsOptions(message);
+//
+//                default -> {
+//                    //синхронизировать?
+//                    if (isCreatingAd) {
+//                        saveAnnouncement(chatId, message.getText());
+//                        sendAnnouncementToEveryone(chatId, message.getText());
+//                    }
+//                    if (isCreatingMalfunction) {
+//
+//                        saveMalfunction(message.getText());
+//
+//                    } else {
+//                        sendMessage(chatId, "Извините, но я не узнаю команду");
+//                    }
+//
+//                }
+//            }
+
+
 
         } else if (update.hasCallbackQuery()) {
 
@@ -122,9 +137,6 @@ public class ChemistAltBot extends TelegramLongPollingBot {
 
             switch (data) {
 
-                case AREA1 -> sendMessage(chatId, "Информация о " + AREA1);
-                case AREA2 -> sendMessage(chatId, "Информация о " + AREA2);
-                case AREA3 -> sendMessage(chatId, "Информация о " + AREA3);
                 case "view_announcements" -> showAnnouncementList(chatId);
                 case "create_announcements" -> {
                     isCreatingAd = true;
@@ -137,6 +149,13 @@ public class ChemistAltBot extends TelegramLongPollingBot {
                 }
 
                 default -> {
+
+                    if (data.startsWith("workshop_description")) {
+
+                        String workshopId = data.replace("workshop_description", "");
+                        getWorkshopInfo(Long.valueOf(workshopId), chatId);
+
+                    }
 
                     if (data.startsWith("announcement_")) {
 
@@ -191,7 +210,9 @@ public class ChemistAltBot extends TelegramLongPollingBot {
 
     }
 
-    private void showAnnouncementOptions(Long chatId) {
+    private void showAnnouncementOptions(Message message) {
+
+        Long chatId = message.getChatId();
 
         SendMessage messageToSend = new SendMessage();
         messageToSend.setChatId(String.valueOf(chatId));
@@ -248,9 +269,15 @@ public class ChemistAltBot extends TelegramLongPollingBot {
         }
     }
 
-    private void giveUserInformation(Message message) {
+    private void getInfoOptions(Message message) {
 
         Long chatId = message.getChatId();
+        List<Workshop> workshops = workshopRepository.findAll();
+
+        if (workshops.isEmpty()) {
+            sendMessage(chatId, "Участков не найдено");
+            return;
+        }
 
         SendMessage messageToSend = new SendMessage();
         messageToSend.setChatId(String.valueOf(chatId));
@@ -260,27 +287,33 @@ public class ChemistAltBot extends TelegramLongPollingBot {
         List<InlineKeyboardButton> inlineRow = new ArrayList<>();
         List<List<InlineKeyboardButton>> inlineRows = new ArrayList<>();
 
-        InlineKeyboardButton area1 = new InlineKeyboardButton();
-        area1.setText("Участок 1");
-        area1.setCallbackData(AREA1);
+        for (Workshop workshop : workshops) {
+            InlineKeyboardButton workshopButton = createButton(workshop.getName(), "workshop_description" + workshop.getId());
+            inlineRow.add(workshopButton);
+        }
 
-        InlineKeyboardButton area2 = new InlineKeyboardButton();
-        area2.setText("Участок 2");
-        area2.setCallbackData(AREA2);
-
-        InlineKeyboardButton area3 = new InlineKeyboardButton();
-        area3.setText("Участок 3");
-        area3.setCallbackData(AREA3);
-
-        inlineRow.add(area1);
-        inlineRow.add(area2);
-        inlineRow.add(area3);
         inlineRows.add(inlineRow);
 
         markupLine.setKeyboard(inlineRows);
         messageToSend.setReplyMarkup(markupLine);
 
         executeSending(messageToSend);
+
+        String username = message.getChat().getUserName();
+        log.info("Пользователь " + username + " id = " + chatId + " запросил информацию о линиях");
+    }
+
+    private void getWorkshopInfo(Long workshopId, Long chatId) {
+
+        Optional<Workshop> workshopOptional = workshopRepository.findById(workshopId);
+        if (workshopOptional.isPresent()) {
+
+            Workshop workshop = workshopOptional.get();
+            String description = workshop.getDescription();
+
+            sendMessage(chatId, description);
+            log.info("Пользователь c id = " + chatId + " запросил информацию о " + workshop.getName());
+        }
 
     }
 
@@ -344,8 +377,9 @@ public class ChemistAltBot extends TelegramLongPollingBot {
 
     }
 
-    private void showAllInstructions(Long chatId) {
+    private void showAllInstructions(Message message) {
 
+        Long chatId = message.getChatId();
         List<Instruction> allInstructions = instructionRepository.findAll();
 
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
@@ -396,7 +430,9 @@ public class ChemistAltBot extends TelegramLongPollingBot {
 
     }
 
-    private void showMalfunctionsOptions(Long chatId) {
+    private void showMalfunctionsOptions(Message message) {
+
+        Long chatId = message.getChatId();
 
         SendMessage messageToSend = new SendMessage();
         messageToSend.setChatId(String.valueOf(chatId));
@@ -417,7 +453,6 @@ public class ChemistAltBot extends TelegramLongPollingBot {
         messageToSend.setReplyMarkup(markupLine);
 
         executeSending(messageToSend);
-
     }
 
     private void showMalfunctionsList(Long chatId) {

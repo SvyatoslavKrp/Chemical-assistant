@@ -1,4 +1,4 @@
-package org.painting.chembot.chemistalt_bot.domain;
+package org.alt.painting.chemist_assistant.domain;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -6,7 +6,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import javax.persistence.*;
-import java.time.LocalDate;
 
 @Getter
 @Setter
@@ -14,20 +13,17 @@ import java.time.LocalDate;
 @NoArgsConstructor
 
 @Entity
-@Table(name = "malfunctions")
-public class Malfunction {
+@Table(name = "instructions")
+public class Instruction {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "description")
-    private String description;
+    @Column(name = "path")
+    private String path;
 
     @Column(name = "title")
     private String title;
-
-    @Column(name = "date")
-    private LocalDate date;
 
 }
