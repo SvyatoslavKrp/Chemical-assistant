@@ -1,4 +1,4 @@
-package org.alt.painting.chemist_assistant.config;
+package org.painting.chemist_assistant.config;
 
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;

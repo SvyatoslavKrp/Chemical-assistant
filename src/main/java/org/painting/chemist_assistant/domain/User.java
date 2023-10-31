@@ -1,4 +1,4 @@
-package org.alt.painting.chemist_assistant.domain;
+package org.painting.chemist_assistant.domain;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
