@@ -1,4 +1,4 @@
-package org.alt.painting.chemist_assistant;
+package org.painting.chemist_assistant;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
