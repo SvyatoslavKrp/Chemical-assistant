@@ -36,8 +36,6 @@ public class ChemistAltBot extends TelegramLongPollingBot {
     private final WorkshopRepository workshopRepository;
 
     private final Map<String, Consumer<Message>> commands = new HashMap<>();
-    private boolean isCreatingAd = false;
-    private boolean isCreatingMalfunction = false;
 
     public ChemistAltBot(BotConfig botConfig,
                          MessageHandler startCommandHandler,
@@ -97,8 +95,8 @@ public class ChemistAltBot extends TelegramLongPollingBot {
         if (update.hasMessage() && update.getMessage().hasText()) {
 
             Message message = update.getMessage();
-            SendMessage messageToSend = startCommandHandler.handle(message);
-            executeSending(messageToSend);
+            List<SendMessage> messagesToSend = startCommandHandler.handle(message);
+            executeSending(messagesToSend);
 
 //            Consumer<Message> handler = commands.get(messageText);
 //
@@ -139,8 +137,8 @@ public class ChemistAltBot extends TelegramLongPollingBot {
             String data = update.getCallbackQuery().getData();
             Message message = update.getCallbackQuery().getMessage();
             message.setText(data);
-            SendMessage messageToSend = startCommandHandler.handle(message);
-            executeSending(messageToSend);
+            List<SendMessage> messagesToSend = startCommandHandler.handle(message);
+            executeSending(messagesToSend);
 
 //            if (StringUtils.startsWith(data, "workshop_description_")) {
 //                String workshopId = data.replace("workshop_description_", "");
@@ -221,41 +219,41 @@ public class ChemistAltBot extends TelegramLongPollingBot {
 //        executeSending(sendMessage);
 //    }
 
-    private void sendUserWorkshopInformation(Long chatId, Long workshopId) {
-        Optional<Workshop> optionalWorkshop = workshopRepository.findById(workshopId);
-        if (optionalWorkshop.isPresent()) {
-            SendMessage messageToSend = new SendMessage();
-            messageToSend.setChatId(String.valueOf(chatId));
-            messageToSend.setText(optionalWorkshop.get().getDescription());
-            executeSending(messageToSend);
-            log.info("The user (id = " + chatId + " has asked information about workshop (id = " + workshopId);
-        }
-    }
+//    private void sendUserWorkshopInformation(Long chatId, Long workshopId) {
+//        Optional<Workshop> optionalWorkshop = workshopRepository.findById(workshopId);
+//        if (optionalWorkshop.isPresent()) {
+//            SendMessage messageToSend = new SendMessage();
+//            messageToSend.setChatId(String.valueOf(chatId));
+//            messageToSend.setText(optionalWorkshop.get().getDescription());
+//            executeSending(messageToSend);
+//            log.info("The user (id = " + chatId + " has asked information about workshop (id = " + workshopId);
+//        }
+//    }
 
-    private void showAnnouncementOptions(Message message) {
-
-        Long chatId = message.getChatId();
-
-        SendMessage messageToSend = new SendMessage();
-        messageToSend.setChatId(String.valueOf(chatId));
-        messageToSend.setText("Выберите действие:");
-
-        InlineKeyboardMarkup markupLine = new InlineKeyboardMarkup();
-        List<InlineKeyboardButton> inlineRow = new ArrayList<>();
-        List<List<InlineKeyboardButton>> inlineRows = new ArrayList<>();
-
-        InlineKeyboardButton viewButton = createButton("Посмотреть список моих объявлений", "view_announcements");
-        InlineKeyboardButton createButton = createButton("Создать объявление", "create_announcements");
-
-        inlineRow.add(viewButton);
-        inlineRow.add(createButton);
-        inlineRows.add(inlineRow);
-
-        markupLine.setKeyboard(inlineRows);
-        messageToSend.setReplyMarkup(markupLine);
-
-        executeSending(messageToSend);
-    }
+//    private void showAnnouncementOptions(Message message) {
+//
+//        Long chatId = message.getChatId();
+//
+//        SendMessage messageToSend = new SendMessage();
+//        messageToSend.setChatId(String.valueOf(chatId));
+//        messageToSend.setText("Выберите действие:");
+//
+//        InlineKeyboardMarkup markupLine = new InlineKeyboardMarkup();
+//        List<InlineKeyboardButton> inlineRow = new ArrayList<>();
+//        List<List<InlineKeyboardButton>> inlineRows = new ArrayList<>();
+//
+//        InlineKeyboardButton viewButton = createButton("Посмотреть список моих объявлений", "view_announcements");
+//        InlineKeyboardButton createButton = createButton("Создать объявление", "create_announcements");
+//
+//        inlineRow.add(viewButton);
+//        inlineRow.add(createButton);
+//        inlineRows.add(inlineRow);
+//
+//        markupLine.setKeyboard(inlineRows);
+//        messageToSend.setReplyMarkup(markupLine);
+//
+//        executeSending(messageToSend);
+//    }
 
 
 //    private void startCommandReceived(Message message) {
@@ -451,30 +449,30 @@ public class ChemistAltBot extends TelegramLongPollingBot {
 
     }
 
-    private void showMalfunctionsOptions(Message message) {
-
-        Long chatId = message.getChatId();
-
-        SendMessage messageToSend = new SendMessage();
-        messageToSend.setChatId(String.valueOf(chatId));
-        messageToSend.setText("Выберите действие:");
-
-        InlineKeyboardMarkup markupLine = new InlineKeyboardMarkup();
-        List<InlineKeyboardButton> inlineRow = new ArrayList<>();
-        List<List<InlineKeyboardButton>> inlineRows = new ArrayList<>();
-
-        InlineKeyboardButton viewButton = createButton("Посмотреть список неисправностей", "view_malfunctions");
-        InlineKeyboardButton reportButton = createButton("Сообщить о новой неисправности", "create_malfunction");
-
-        inlineRow.add(viewButton);
-        inlineRow.add(reportButton);
-        inlineRows.add(inlineRow);
-
-        markupLine.setKeyboard(inlineRows);
-        messageToSend.setReplyMarkup(markupLine);
-
-        executeSending(messageToSend);
-    }
+//    private void showMalfunctionsOptions(Message message) {
+//
+//        Long chatId = message.getChatId();
+//
+//        SendMessage messageToSend = new SendMessage();
+//        messageToSend.setChatId(String.valueOf(chatId));
+//        messageToSend.setText("Выберите действие:");
+//
+//        InlineKeyboardMarkup markupLine = new InlineKeyboardMarkup();
+//        List<InlineKeyboardButton> inlineRow = new ArrayList<>();
+//        List<List<InlineKeyboardButton>> inlineRows = new ArrayList<>();
+//
+//        InlineKeyboardButton viewButton = createButton("Посмотреть список неисправностей", "view_malfunctions");
+//        InlineKeyboardButton reportButton = createButton("Сообщить о новой неисправности", "create_malfunction");
+//
+//        inlineRow.add(viewButton);
+//        inlineRow.add(reportButton);
+//        inlineRows.add(inlineRow);
+//
+//        markupLine.setKeyboard(inlineRows);
+//        messageToSend.setReplyMarkup(markupLine);
+//
+//        executeSending(messageToSend);
+//    }
 
 //    private void showMalfunctionsList(Long chatId) {
 //        List<Malfunction> malfunctions = malfunctionRepository.findAll();
@@ -534,21 +532,23 @@ public class ChemistAltBot extends TelegramLongPollingBot {
         return messageText.split(":");
     }
 
-    private void sendMessage(Long chatId, String textToSend) {
+//    private void sendMessage(Long chatId, String textToSend) {
+//
+//        SendMessage messageToSend = new SendMessage();
+//        messageToSend.setChatId(String.valueOf(chatId));
+//        messageToSend.setText(textToSend);
+//
+////        userRepository.findById(chatId).ifPresent(user -> log.info("Ответ пользователю " + user.getUsername()));
+//
+//        executeSending(messageToSend);
+//    }
 
-        SendMessage messageToSend = new SendMessage();
-        messageToSend.setChatId(String.valueOf(chatId));
-        messageToSend.setText(textToSend);
-
-//        userRepository.findById(chatId).ifPresent(user -> log.info("Ответ пользователю " + user.getUsername()));
-
-        executeSending(messageToSend);
-    }
-
-    private void executeSending(SendMessage messageToSend) {
+    private void executeSending(List<SendMessage> messagesToSend) {
 
         try {
-            execute(messageToSend);
+            for (SendMessage messageToSend : messagesToSend) {
+                execute(messageToSend);
+            }
         } catch (TelegramApiException e) {
             log.error("Error occurred: " + e.getMessage());
         }

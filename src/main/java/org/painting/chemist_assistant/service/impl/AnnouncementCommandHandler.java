@@ -15,6 +15,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @RequiredArgsConstructor
@@ -23,37 +24,34 @@ public class AnnouncementCommandHandler extends BaseHandler {
 
     private final AnnouncementRepository announcementRepository;
     private final UserRepository userRepository;
-    private final boolean isCreating = false;
+    private boolean isCreatingAd = false;
     @Override
-    public SendMessage handle(Message message) {
+    public List<SendMessage> handle(Message message) {
         String messageText = message.getText();
         if (StringUtils.equals(messageText, "/announcements")) {
-            return showAnnouncementOptions(message);
+            return List.of(showAnnouncementOptions(message));
         } else if (StringUtils.startsWith(messageText, "view_announcements_")) {
-            return showAnnouncementList(message);
-        } else if (StringUtils.equals(messageText, "create_announcements_")) {
-            SendMessage sendMessage = new SendMessage();
-            sendMessage.setChatId(String.valueOf(message.getChatId()));
-            sendMessage.setText("Введите Ваше объявление");
-            return sendMessage;
-//            createAnnouncement(message);
-//            Long chatId = message.getChatId();
-//            SendMessage sendMessage = new SendMessage();
-//            sendMessage.setChatId(String.valueOf(chatId));
-//            sendMessage.setText("Ваше объявление сохранено");
-//            log.info("The user (id = " + chatId + "has saved new announcement: " + messageText);
-//            return sendMessage;
+            return List.of(showAnnouncementList(message));
+        } else if (StringUtils.equals(messageText, "create_announcement_")) {
+            return List.of(getSendMessage(message));
+        } else if (StringUtils.startsWith(messageText, "announcement_")) {
+            makeMailing(message.getChatId(), messageText);
+        } else if (isCreatingAd) {
+            return List.of(createAnnouncement(message));
         }
         else if (nextHandler != null) {
             return nextHandler.handle(message);
         }
-        return null;
+        return List.of(createSendMessage(String.valueOf(message.getChatId()), "Извините, не могу обработать ваш запрос. Попробуйте снова."));
     }
 
-    private void createAnnouncement(Message message) {
+    private synchronized SendMessage getSendMessage(Message message) {
+        isCreatingAd = true;
+        return createSendMessage(String.valueOf(message.getChatId()), "Введите Ваше оъявление");
+    }
+
+    private synchronized SendMessage createAnnouncement(Message message) {
         Long chatId = message.getChatId();
-        SendMessage messageToSend = new SendMessage();
-        messageToSend.setChatId(String.valueOf(chatId));
         String messageText = message.getText().replace("create_announcement_", "");
         Announcement announcement = new Announcement();
         Optional<User> optionalUser = userRepository.findById(chatId);
@@ -63,6 +61,12 @@ public class AnnouncementCommandHandler extends BaseHandler {
             announcement.setDate(LocalDate.now());
             announcement.setAnnouncement(messageText);
             announcementRepository.save(announcement);
+            log.info(String.format("The user (id = %d) has saved new announcement: %s", chatId, messageText));
+            isCreatingAd = false;
+            return new SendMessage(String.valueOf(chatId), "Ваше объявление сохранено");
+        } else {
+            log.error(String.format("An error occurred while saving the ad, id = %d", chatId));
+            return new SendMessage(String.valueOf(chatId), "Произошла ошибка во время сохранения");
         }
     }
 
@@ -111,5 +115,29 @@ public class AnnouncementCommandHandler extends BaseHandler {
         sendMessage.setReplyMarkup(markup);
         sendMessage.setText("Список объявлений:");
         return sendMessage;
+    }
+
+//    private SendMessage sendRepeatAnnouncement(Message message) {
+//        String messageText = message.getText();
+//        String announcement = messageText.replace("announcement_", "");
+//        return createSendMessage(String.valueOf(message.getChatId()), announcement);
+//    }
+
+    private SendMessage createSendMessage(String chatId, String text) {
+        return new SendMessage(chatId, text);
+    }
+    private List<SendMessage> makeMailing(Long chatId, String messageText) {
+        List<User> users = userRepository.findAll();
+        if (users.size() == 2) { // проблема с долбанным стартом
+            return List.of(new SendMessage(String.valueOf(chatId), "Вы здесь один"));
+        }
+        String announcement = messageText.replace("announcement_", "");
+        List<SendMessage> messages = new ArrayList<>();
+        for (User userToSend : users) {
+            if (!Objects.equals(userToSend.getChatId(), chatId)) {
+                messages.add(new SendMessage(String.valueOf(userToSend.getChatId()), announcement));
+            }
+        }
+        return messages;
     }
 }
