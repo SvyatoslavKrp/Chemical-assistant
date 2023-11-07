@@ -6,13 +6,15 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
+import java.util.List;
+
 public abstract class BaseHandler implements MessageHandler {
 
     MessageHandler nextHandler;
     static final Logger log = org.slf4j.LoggerFactory.getLogger(BaseHandler.class);
 
     @Override
-    public abstract SendMessage handle(Message message);
+    public abstract List<SendMessage> handle(Message message);
 
     @Override
     public void setNextHandler(MessageHandler nextHandler) {

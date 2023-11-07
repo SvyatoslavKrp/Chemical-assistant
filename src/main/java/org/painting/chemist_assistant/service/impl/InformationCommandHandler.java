@@ -20,12 +20,12 @@ public class InformationCommandHandler extends BaseHandler {
 
     private final WorkshopRepository workshopRepository;
     @Override
-    public SendMessage handle(Message message) {
+    public List<SendMessage> handle(Message message) {
 
         if (StringUtils.equals(message.getText(), "/information")) {
-            return getInfoOptions(message);
+            return List.of(getInfoOptions(message));
         } else if (StringUtils.startsWith(message.getText(), "workshop_description_")) {
-            return sendUserWorkshopInformation(message);
+            return List.of(sendUserWorkshopInformation(message));
         } else if (nextHandler != null) {
             return nextHandler.handle(message);
         }
@@ -70,7 +70,7 @@ public class InformationCommandHandler extends BaseHandler {
             log.info("The user (id = " + chatId + " has asked information about workshop (id = " + workshopId + ")");
             return messageToSend;
         }
-        return null;
+        return new SendMessage(String.valueOf(chatId), "Информация не найдена");
     }
 
 }

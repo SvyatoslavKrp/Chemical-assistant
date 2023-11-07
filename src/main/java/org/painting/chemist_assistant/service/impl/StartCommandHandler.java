@@ -10,6 +10,7 @@ import org.telegram.telegrambots.meta.api.objects.Chat;
 import org.telegram.telegrambots.meta.api.objects.Message;
 
 import java.sql.Timestamp;
+import java.util.List;
 
 @RequiredArgsConstructor
 @Service
@@ -18,7 +19,7 @@ public class StartCommandHandler extends BaseHandler {
     private final UserRepository userRepository;
 
     @Override
-    public SendMessage handle(Message message) {
+    public List<SendMessage> handle(Message message) {
 
         Long chatId = message.getChatId();
         SendMessage messageToSend = new SendMessage();
@@ -31,7 +32,7 @@ public class StartCommandHandler extends BaseHandler {
         } else if (nextHandler != null) {
             return nextHandler.handle(message);
         }
-        return messageToSend;
+        return List.of(messageToSend);
     }
 
     private String registerUser(Message message) {
